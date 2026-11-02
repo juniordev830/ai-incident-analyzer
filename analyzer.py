@@ -33,9 +33,16 @@ def analyze(rows: list[dict], threshold: float = 2.5) -> list[dict]:
 def main():
     cli=argparse.ArgumentParser(description='Detect statistical high-latency anomalies')
     cli.add_argument('csv_file', help='CSV containing service,latency_ms')
+    cli.add_argument('--threshold', type=float, default=2.5,
+                     help='positive z-score threshold (default: 2.5)')
     args=cli.parse_args()
-    with Path(args.csv_file).open(newline='',encoding='utf-8') as file:
-        results=analyze(list(csv.DictReader(file)))
+    if not math.isfinite(args.threshold) or args.threshold <= 0:
+        cli.error('threshold must be a positive finite number')
+    try:
+        with Path(args.csv_file).open(newline='',encoding='utf-8') as file:
+            results=analyze(list(csv.DictReader(file)), threshold=args.threshold)
+    except (OSError, UnicodeError, csv.Error) as error:
+        cli.error(f'cannot read CSV: {error}')
     print(json.dumps({'anomalies':results},indent=2))
 
 if __name__=='__main__': main()

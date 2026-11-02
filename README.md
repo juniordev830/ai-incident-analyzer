@@ -10,7 +10,10 @@ Detector estatístico de anomalias de latência a partir de CSV de logs (`servic
 
 ```bash
 python analyzer.py examples/latencies.csv
+python analyzer.py examples/latencies.csv --threshold 2.3
 ```
+
+Use `--threshold` para definir o escore z mínimo. O padrão é 2,5 e o valor deve ser positivo e finito. Ajustar o limiar altera a sensibilidade e deve ser validado com dados representativos.
 
 ## Testes
 
