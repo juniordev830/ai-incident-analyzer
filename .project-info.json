@@ -1,0 +1,7 @@
+{
+  "name": "ai-incident-analyzer",
+  "title": "AI Incident Analyzer",
+  "stage": "MVP inicial",
+  "owner": "juniordev830",
+  "publishing_requires_authentication": true
+}

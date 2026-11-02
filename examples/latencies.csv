@@ -1,0 +1,8 @@
+service,latency_ms
+api,100
+api,99
+api,103
+api,101
+api,100
+api,98
+api,1000
