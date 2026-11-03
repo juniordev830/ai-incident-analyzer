@@ -16,6 +16,12 @@ class AnalyzerTests(unittest.TestCase):
         self.assertEqual([(item['service'], item['latency_ms']) for item in anomalies],
                          [('api', 1000.0)])
 
+    def test_custom_minimum_sample_count(self):
+        data = [{'service': 'api', 'latency_ms': str(value)} for value in [100, 100, 100, 100, 1000]]
+        self.assertEqual(len(analyze(data, threshold=2.0, min_samples=5)), 1)
+        with self.assertRaises(ValueError):
+            analyze(data, min_samples=1)
+
     def test_drops_invalid_and_small_samples(self):
         self.assertEqual(analyze([{'service':'api','latency_ms':'nan'},{'service':'api','latency_ms':'100'}]),[])
     def test_rejects_bad_threshold(self):
