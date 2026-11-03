@@ -7,8 +7,10 @@ import math
 import statistics
 from pathlib import Path
 
-def analyze(rows: list[dict], threshold: float = 2.5) -> list[dict]:
+def analyze(rows: list[dict], threshold: float = 2.5, min_samples: int = 6) -> list[dict]:
     if not math.isfinite(threshold) or threshold <= 0: raise ValueError('invalid threshold')
+    if isinstance(min_samples, bool) or not isinstance(min_samples, int) or not 2 <= min_samples <= 10000:
+        raise ValueError('invalid minimum sample count')
     valid = []
     for row in rows:
         try: value = float(row['latency_ms'])
@@ -18,7 +20,7 @@ def analyze(rows: list[dict], threshold: float = 2.5) -> list[dict]:
     for service, duration in valid: by_service.setdefault(service, []).append(duration)
     baselines = {}
     for service, samples in by_service.items():
-        if len(samples) >= 6:
+        if len(samples) >= min_samples:
             mean = statistics.mean(samples)
             stddev = statistics.pstdev(samples)
             baselines[service] = (mean, stddev)
@@ -35,12 +37,16 @@ def main():
     cli.add_argument('csv_file', help='CSV containing service,latency_ms')
     cli.add_argument('--threshold', type=float, default=2.5,
                      help='positive z-score threshold (default: 2.5)')
+    cli.add_argument('--min-samples', type=int, default=6,
+                     help='minimum samples per service to build a baseline (default: 6)')
     args=cli.parse_args()
     if not math.isfinite(args.threshold) or args.threshold <= 0:
         cli.error('threshold must be a positive finite number')
+    if not 2 <= args.min_samples <= 10000:
+        cli.error('min-samples must be between 2 and 10000')
     try:
         with Path(args.csv_file).open(newline='',encoding='utf-8') as file:
-            results=analyze(list(csv.DictReader(file)), threshold=args.threshold)
+            results=analyze(list(csv.DictReader(file)), threshold=args.threshold, min_samples=args.min_samples)
     except (OSError, UnicodeError, csv.Error) as error:
         cli.error(f'cannot read CSV: {error}')
     print(json.dumps({'anomalies':results},indent=2))
