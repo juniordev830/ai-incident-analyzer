@@ -8,28 +8,56 @@ import statistics
 from pathlib import Path
 
 def analyze(rows: list[dict], threshold: float = 2.5, min_samples: int = 6) -> list[dict]:
-    if not math.isfinite(threshold) or threshold <= 0: raise ValueError('invalid threshold')
+    """Detect high-latency outliers against a leave-one-out service baseline.
+
+    Comparing a value with a mean/stddev that includes that same value masks
+    extreme spikes in small samples. The candidate is excluded from its own
+    reference baseline; this also avoids an O(n²) re-scan of other samples.
+    """
+    if not math.isfinite(threshold) or threshold <= 0:
+        raise ValueError('invalid threshold')
     if isinstance(min_samples, bool) or not isinstance(min_samples, int) or not 2 <= min_samples <= 10000:
         raise ValueError('invalid minimum sample count')
     valid = []
     for row in rows:
-        try: value = float(row['latency_ms'])
-        except (KeyError, TypeError, ValueError): continue
-        if math.isfinite(value) and value >= 0: valid.append((str(row.get('service', 'unknown')), value))
+        try:
+            value = float(row['latency_ms'])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if math.isfinite(value) and value >= 0:
+            valid.append((str(row.get('service', 'unknown')), value))
+
     by_service = {}
-    for service, duration in valid: by_service.setdefault(service, []).append(duration)
+    for service, duration in valid:
+        by_service.setdefault(service, []).append(duration)
+
     baselines = {}
     for service, samples in by_service.items():
-        if len(samples) >= min_samples:
-            mean = statistics.mean(samples)
-            stddev = statistics.pstdev(samples)
-            baselines[service] = (mean, stddev)
+        if len(samples) < min_samples:
+            continue
+        count = len(samples)
+        mean = statistics.fmean(samples)
+        m2 = math.fsum((sample - mean) ** 2 for sample in samples)
+        baselines[service] = (count, mean, m2)
+
     output = []
     for service, duration in valid:
-        if service not in baselines: continue
-        mean, stddev = baselines[service]
-        if stddev > 0 and duration > mean and (duration - mean) / stddev >= threshold:
-            output.append({'service': service, 'latency_ms': duration, 'z_score': round((duration-mean)/stddev,3)})
+        if service not in baselines:
+            continue
+        count, mean, m2 = baselines[service]
+        other_mean = mean - (duration - mean) / (count - 1)
+        if duration <= other_mean:
+            continue
+        # Welford's removal formula computes variance excluding this sample.
+        other_m2 = max(0.0, m2 - (duration - mean) * (duration - other_mean))
+        other_stddev = math.sqrt(other_m2 / (count - 1))
+        if other_stddev == 0:
+            # A z-score is undefined for a constant reference baseline.
+            output.append({'service': service, 'latency_ms': duration,
+                           'z_score': None, 'baseline_constant': True})
+        elif (duration - other_mean) / other_stddev >= threshold:
+            output.append({'service': service, 'latency_ms': duration,
+                           'z_score': round((duration - other_mean) / other_stddev, 3)})
     return output
 
 
