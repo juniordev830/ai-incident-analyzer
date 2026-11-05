@@ -10,6 +10,12 @@ Detector estatístico de anomalias de latência a partir de CSV de logs (`servic
 - Serviços com menos amostras que o mínimo escolhido aparecem no relatório como **baseline indisponível**; o programa não inventa resultados para eles.
 - As saídas são locais e não enviam nenhuma telemetria.
 
+## Correção estatística — baseline sem a observação avaliada
+
+O detector agora calcula a média e o desvio-padrão de cada serviço **excluindo a própria observação suspeita** (*leave-one-out*). Antes, com apenas seis registros e o limiar padrão de 2,5, um pico isolado podia passar despercebido porque aumentava sua própria média e variância. O cálculo permanece linear no número de linhas por serviço.
+
+O campo `z_score` é numérico quando há dispersão na referência. Se todos os outros valores forem idênticos e o candidato for superior, a anomalia é sinalizada com `z_score: null` e `baseline_constant: true` (desvio-padrão zero; o escore z é indefinido). As médias agregadas exibidas no relatório continuam incluindo todas as amostras e são **descritivas**, não o baseline específico usado para avaliar cada linha.
+
 ## Como executar
 
 ```bash
