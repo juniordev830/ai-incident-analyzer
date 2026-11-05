@@ -16,6 +16,24 @@ class AnalyzerTests(unittest.TestCase):
         self.assertEqual([(item['service'], item['latency_ms']) for item in anomalies],
                          [('api', 1000.0)])
 
+    def test_default_threshold_detects_spike_in_six_measurements(self):
+        # Including the spike in the mean limits its own z-score to sqrt(5)
+        # (about 2.236), which is below the default threshold of 2.5.
+        measurements = [100, 99, 101, 100, 99, 1000]
+        data = [{'service': 'api', 'latency_ms': str(value)} for value in measurements]
+        anomalies = analyze(data)
+        self.assertEqual(len(anomalies), 1)
+        self.assertEqual(anomalies[0]['latency_ms'], 1000.0)
+        self.assertGreater(anomalies[0]['z_score'], 2.5)
+
+    def test_constant_reference_baseline_reports_undefined_z_score(self):
+        data = [{'service': 'api', 'latency_ms': str(x)} for x in ([100] * 5 + [1000])]
+        anomalies = analyze(data)
+        self.assertEqual(anomalies, [{
+            'service': 'api', 'latency_ms': 1000.0,
+            'z_score': None, 'baseline_constant': True,
+        }])
+
     def test_custom_minimum_sample_count(self):
         data = [{'service': 'api', 'latency_ms': str(value)} for value in [100, 100, 100, 100, 1000]]
         self.assertEqual(len(analyze(data, threshold=2.0, min_samples=5)), 1)
