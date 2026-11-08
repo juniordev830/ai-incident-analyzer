@@ -231,5 +231,18 @@ class IncidentCliTests(unittest.TestCase):
         self.assertEqual(list(self.root.glob(".incident-*.tmp")), [])
 
 
+    def test_jsonl_sarif_has_no_csv_header_offset(self):
+        self.input.write_text(
+            "".join(json.dumps({"service": "api", "latency_ms": value}) + "\n"
+                    for value in [100] * 6 + [1000]),
+            encoding="utf-8",
+        )
+        result = self.invoke("--input-format", "jsonl", "--format", "sarif")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        finding = json.loads(result.stdout)["runs"][0]["results"][0]
+        self.assertEqual(finding["locations"][0]["physicalLocation"]
+                         ["region"]["startLine"], 7)
+
+
 if __name__ == "__main__":
     unittest.main()
