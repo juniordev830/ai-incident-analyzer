@@ -85,7 +85,7 @@ def read_input(path: Path, input_format: str) -> Iterator[Mapping]:
         raise ValueError("unsupported input format")
 
 
-def render(report, output_format: str, input_path: Path) -> str:
+def render(report, output_format: str, input_path: Path, input_format: str = "csv") -> str:
     if output_format == "json":
         return json.dumps(report.as_dict(), indent=2, ensure_ascii=False) + "\n"
     if output_format == "summary":
@@ -93,7 +93,8 @@ def render(report, output_format: str, input_path: Path) -> str:
     if output_format == "markdown":
         return render_markdown(report)
     if output_format == "sarif":
-        return json.dumps(render_sarif(report, input_path.name),
+        return json.dumps(render_sarif(report, input_path.name,
+                                            line_offset=1 if input_format == "csv" else 0),
                           indent=2, ensure_ascii=False) + "\n"
     raise ValueError("unsupported output format")
 
@@ -144,7 +145,7 @@ def run(argv: list[str] | None = None) -> int:
         if args.input.stat().st_size > MAX_INPUT_BYTES:
             raise ValueError("input exceeds the 20 MiB safety limit")
         report = analyze_incidents(read_input(args.input, args.input_format), config)
-        content = render(report, args.format, args.input)
+        content = render(report, args.format, args.input, args.input_format)
         if args.output:
             safe_write(args.output, content, args.input)
         else:
