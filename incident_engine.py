@@ -357,8 +357,10 @@ def render_markdown(report: AnalysisReport) -> str:
     return "\n".join(lines) + "\n"
 
 
-def render_sarif(report: AnalysisReport, artifact: str) -> dict:
-    """SARIF 2.1.0 annotations point to original CSV row numbers."""
+def render_sarif(report: AnalysisReport, artifact: str, line_offset: int = 1) -> dict:
+    """SARIF 2.1.0 annotations point to original CSV or JSONL rows."""
+    if line_offset not in (0, 1):
+        raise ValueError("line_offset must be 0 or 1")
     results = []
     for incident in report.incidents:
         results.append({
@@ -370,7 +372,7 @@ def render_sarif(report: AnalysisReport, artifact: str) -> dict:
             )},
             "locations": [{"physicalLocation": {
                 "artifactLocation": {"uri": artifact},
-                "region": {"startLine": incident.row + 1},
+                "region": {"startLine": incident.row + line_offset},
             }}],
             "partialFingerprints": {"incidentId": incident.id},
         })
