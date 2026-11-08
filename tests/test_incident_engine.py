@@ -377,5 +377,16 @@ class ReportingTests(unittest.TestCase):
                          {"invalid_latency": 1, "invalid_row": 2})
 
 
+    def test_sarif_jsonl_uses_one_based_row_without_header(self):
+        report = detected([100] * 6 + [1000])
+        sarif = render_sarif(report, "events.jsonl", line_offset=0)
+        self.assertEqual(sarif["runs"][0]["results"][0]["locations"][0]
+                         ["physicalLocation"]["region"]["startLine"], 7)
+
+    def test_sarif_rejects_invalid_line_offset(self):
+        with self.assertRaises(ValueError):
+            render_sarif(detected([100] * 6 + [1000]), "events.csv", line_offset=2)
+
+
 if __name__ == "__main__":
     unittest.main()
