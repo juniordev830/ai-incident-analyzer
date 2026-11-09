@@ -390,3 +390,31 @@ class ReportingTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class ReportSafetyRegressionTests(unittest.TestCase):
+    def test_rejects_control_characters_in_service_names(self):
+        for name in ("api\nINFO forged", "api\rprogress", "api\tother", "api\x1b[31m", "api\x7f"):
+            with self.subTest(name=name):
+                with self.assertRaisesRegex(ValueError, "invalid_service"):
+                    parse_event({"service": name, "latency_ms": 100}, 1)
+
+    def test_rejects_control_characters_in_request_ids(self):
+        for identifier in ("req\nsecondary", "req\x1b[2J", "req\tother"):
+            with self.subTest(identifier=identifier):
+                with self.assertRaisesRegex(ValueError, "invalid_request_id"):
+                    parse_event({"service": "api", "latency_ms": 100,
+                                 "request_id": identifier}, 1)
+
+    def test_rejected_labels_cannot_inject_terminal_lines(self):
+        report = analyze_incidents([
+            {"service": "api\n[CRITICAL] forged", "latency_ms": 30},
+            {"service": "api", "latency_ms": 10},
+        ])
+        self.assertEqual(report.accepted, 1)
+        self.assertEqual(report.as_dict()["rejection_reasons"], {"invalid_service": 1})
+        self.assertNotIn("forged", render_summary(report))
+
+    def test_json_exposes_aggregate_severity_counts(self):
+        report = analyze_incidents([{"service": "api", "latency_ms": 10}])
+        self.assertEqual(report.as_dict()["severity_counts"],
+                         {"critical": 0, "warning": 0})
