@@ -102,6 +102,7 @@ class AnalysisReport:
             "rejected_rows": len(self.rejected),
             "rejection_reasons": dict(sorted(Counter(
                 item.reason for item in self.rejected).items())),
+            "severity_counts": self.severity_counts(),
             "rejections": [asdict(item) for item in self.rejected],
             "suppressed_incidents": self.suppressed,
             "incidents": [asdict(item) for item in self.incidents],
@@ -142,6 +143,8 @@ def parse_event(row: Mapping, number: int) -> Event:
     service = row.get("service")
     if not isinstance(service, str) or not service.strip():
         raise ValueError("missing_service")
+    if any(ord(character) < 32 or ord(character) == 127 for character in service):
+        raise ValueError("invalid_service")
     service = service.strip()
     if len(service) > 100:
         raise ValueError("service_too_long")
@@ -158,6 +161,8 @@ def parse_event(row: Mapping, number: int) -> Event:
     request_id = row.get("request_id")
     if request_id is not None:
         if not isinstance(request_id, str) or len(request_id) > 128:
+            raise ValueError("invalid_request_id")
+        if any(ord(character) < 32 or ord(character) == 127 for character in request_id):
             raise ValueError("invalid_request_id")
         request_id = request_id.strip() or None
     return Event(number, service, latency, timestamp, request_id)
