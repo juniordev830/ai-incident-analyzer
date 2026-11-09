@@ -80,3 +80,7 @@ multimodais, dados ausentes e mudanças de carga podem gerar falsos alertas.
 A cobertura automatizada inclui parsing, estatísticas, janelas causais,
 ordenamento temporal, cooldown, severidade, filtros, JSON/Markdown/SARIF,
 CLI e escrita atômica de relatórios.
+
+## Proteção dos relatórios e contagens agregadas
+
+O analisador rejeita nomes de serviço e identificadores de requisição que contenham caracteres de controle (incluindo novas linhas, tabulações e sequências de escape). Isso reduz o risco de forjar linhas no relatório de terminal. Entradas inválidas são contabilizadas por motivo, sem reproduzir o texto rejeitado. O JSON avançado também fornece `severity_counts` com as contagens de incidentes `critical` e `warning`. São melhorias de segurança e observabilidade do processamento offline, não detecção por IA treinada.
