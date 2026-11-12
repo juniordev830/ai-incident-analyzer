@@ -30,7 +30,7 @@ class ThresholdCliTests(unittest.TestCase):
             with self.subTest(header=header):
                 with tempfile.TemporaryDirectory() as directory:
                     path = Path(directory) / 'invalid.csv'
-                    path.write_text(header + '\\napi,20\\n', encoding='utf-8')
+                    path.write_text(header + '\napi,20\n', encoding='utf-8')
                     result = subprocess.run(
                         [sys.executable, str(SCRIPT), str(path)], capture_output=True, text=True
                     )
