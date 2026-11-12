@@ -32,6 +32,21 @@ def analyze(rows: list[dict], threshold: float = 2.5, min_samples: int = 6) -> l
             output.append({'service': service, 'latency_ms': duration, 'z_score': round((duration-mean)/stddev,3)})
     return output
 
+def read_latency_csv(stream) -> list[dict]:
+    """Read a CSV, rejecting missing fields instead of returning a misleading empty report."""
+    reader = csv.DictReader(stream)
+    columns = reader.fieldnames
+    if not columns:
+        raise ValueError('CSV is empty or missing a header')
+    if any(column is None or not column.strip() for column in columns):
+        raise ValueError('CSV header contains an empty column name')
+    required = {'service', 'latency_ms'}
+    missing = sorted(required.difference(columns))
+    if missing:
+        raise ValueError(f"missing required CSV columns: {', '.join(missing)}")
+    return list(reader)
+
+
 def main():
     cli=argparse.ArgumentParser(description='Detect statistical high-latency anomalies')
     cli.add_argument('csv_file', help='CSV containing service,latency_ms')
@@ -46,8 +61,8 @@ def main():
         cli.error('min-samples must be between 2 and 10000')
     try:
         with Path(args.csv_file).open(newline='',encoding='utf-8') as file:
-            results=analyze(list(csv.DictReader(file)), threshold=args.threshold, min_samples=args.min_samples)
-    except (OSError, UnicodeError, csv.Error) as error:
+            results=analyze(read_latency_csv(file), threshold=args.threshold, min_samples=args.min_samples)
+    except (OSError, UnicodeError, csv.Error, ValueError) as error:
         cli.error(f'cannot read CSV: {error}')
     print(json.dumps({'anomalies':results},indent=2))
 
