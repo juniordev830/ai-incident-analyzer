@@ -33,3 +33,7 @@ Integrar coleta OpenTelemetry, Isolation Forest ou modelos apropriados, precisã
 
 ---
 Projeto de Engenharia de Software mantido na conta [juniordev830](https://github.com/juniordev830).
+
+## Guia de validação
+
+Consulte [docs/GUIA_DE_VALIDACAO.md](docs/GUIA_DE_VALIDACAO.md) para casos de regressão, comandos e evolução planejada.
