@@ -34,6 +34,10 @@ Integrar coleta OpenTelemetry, Isolation Forest ou modelos apropriados, precisã
 ---
 Projeto de Engenharia de Software mantido na conta [juniordev830](https://github.com/juniordev830).
 
-## Guia de validação
+## Guia para contribuir
 
-Consulte [docs/GUIA_DE_VALIDACAO.md](docs/GUIA_DE_VALIDACAO.md) para casos de regressão, comandos e evolução planejada.
+Veja o [roteiro de testes e manutenção](docs/GUIA_DE_VALIDACAO.md) para validar mudanças com comandos e cenários específicos deste projeto.
+
+### Validação do CSV de entrada
+
+O arquivo deve ter cabeçalho contendo as colunas `service` e `latency_ms`. Cabeçalhos ausentes, vazios ou com colunas obrigatórias faltando são rejeitados com erro de CLI, em vez de produzir relatório vazio que poderia ser interpretado como ausência de incidentes. Registros com valores individuais inválidos continuam descartados pelo analisador conforme as regras existentes.
