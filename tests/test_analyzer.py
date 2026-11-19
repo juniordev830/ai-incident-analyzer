@@ -1,7 +1,8 @@
 import csv
+import io
 import unittest
 from pathlib import Path
-from analyzer import analyze
+from analyzer import analyze, read_latency_csv
 
 class AnalyzerTests(unittest.TestCase):
     def test_detects_large_outlier(self):
@@ -26,4 +27,18 @@ class AnalyzerTests(unittest.TestCase):
         self.assertEqual(analyze([{'service':'api','latency_ms':'nan'},{'service':'api','latency_ms':'100'}]),[])
     def test_rejects_bad_threshold(self):
         with self.assertRaises(ValueError): analyze([],threshold=0)
+
+    def test_csv_rejects_duplicate_columns_and_rows_with_missing_or_extra_fields(self):
+        for text, error in [
+            ('service,latency_ms,latency_ms\napi,10,11\n', 'duplicate'),
+            ('service,latency_ms\napi\n', 'line 2'),
+            ('service,latency_ms\napi,10,11\n', 'line 2'),
+        ]:
+            with self.subTest(text=text), self.assertRaisesRegex(ValueError, error):
+                read_latency_csv(io.StringIO(text))
+
+    def test_csv_accepts_quoted_service_names(self):
+        rows = read_latency_csv(io.StringIO('service,latency_ms\n"api, interna",10\n'))
+        self.assertEqual(rows, [{'service': 'api, interna', 'latency_ms': '10'}])
+
 if __name__=='__main__':unittest.main()
