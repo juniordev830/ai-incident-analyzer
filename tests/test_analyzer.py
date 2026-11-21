@@ -5,6 +5,16 @@ from pathlib import Path
 from analyzer import analyze, read_latency_csv
 
 class AnalyzerTests(unittest.TestCase):
+    def test_legacy_analyzer_skips_unsafe_service_and_boolean_latency(self):
+        rows = [{'service': service, 'latency_ms': value}
+                for service, value in [('api', True), ('', 10), ('api\nforged', 500),
+                                       (['bad'], 50), ('api', 100)]]
+        self.assertEqual(analyze(rows, min_samples=2), [])
+        with self.assertRaisesRegex(ValueError, 'rows'):
+            analyze(None)
+        with self.assertRaisesRegex(ValueError, '100000'):
+            analyze([{}] * 100_001)
+
     def test_detects_large_outlier(self):
         data=[{'service':'api','latency_ms':str(x)} for x in [100,99,101,100,101,99,1000]]
         out=analyze(data,threshold=2.3)
