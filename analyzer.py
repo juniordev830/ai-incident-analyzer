@@ -58,6 +58,8 @@ def read_latency_csv(stream) -> list[dict]:
         raise ValueError(f"missing required CSV columns: {', '.join(missing)}")
     rows = []
     for row in reader:
+        if len(rows) >= 100_000:
+            raise ValueError('CSV exceeds maximum 100000 records')
         if None in row or any(value is None for value in row.values()):
             raise ValueError(f'CSV row ending on line {reader.line_num} does not match the header')
         rows.append(row)
