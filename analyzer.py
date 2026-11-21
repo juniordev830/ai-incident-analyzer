@@ -8,14 +8,24 @@ import statistics
 from pathlib import Path
 
 def analyze(rows: list[dict], threshold: float = 2.5, min_samples: int = 6) -> list[dict]:
-    if not math.isfinite(threshold) or threshold <= 0: raise ValueError('invalid threshold')
+    if isinstance(threshold, bool) or not isinstance(threshold, (int, float)) or not math.isfinite(threshold) or threshold <= 0:
+        raise ValueError('invalid threshold')
     if isinstance(min_samples, bool) or not isinstance(min_samples, int) or not 2 <= min_samples <= 10000:
         raise ValueError('invalid minimum sample count')
+    if not isinstance(rows, list) or len(rows) > 100_000:
+        raise ValueError('rows must be a list with at most 100000 records')
     valid = []
     for row in rows:
+        if not isinstance(row, dict) or isinstance(row.get('latency_ms'), bool):
+            continue
         try: value = float(row['latency_ms'])
-        except (KeyError, TypeError, ValueError): continue
-        if math.isfinite(value) and value >= 0: valid.append((str(row.get('service', 'unknown')), value))
+        except (KeyError, TypeError, ValueError, OverflowError): continue
+        service = row.get('service', 'unknown')
+        if not isinstance(service, str) or not service.strip() or len(service.strip()) > 100:
+            continue
+        if any(ord(character) < 32 or ord(character) == 127 for character in service):
+            continue
+        if math.isfinite(value) and value >= 0: valid.append((service.strip(), value))
     by_service = {}
     for service, duration in valid: by_service.setdefault(service, []).append(duration)
     baselines = {}
