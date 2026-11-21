@@ -92,3 +92,5 @@ CLI e escrita atômica de relatórios.
 ## Proteção dos relatórios e contagens agregadas
 
 O analisador rejeita nomes de serviço e identificadores de requisição que contenham caracteres de controle (incluindo novas linhas, tabulações e sequências de escape). Isso reduz o risco de forjar linhas no relatório de terminal. Entradas inválidas são contabilizadas por motivo, sem reproduzir o texto rejeitado. O JSON avançado também fornece `severity_counts` com as contagens de incidentes `critical` e `warning`. São melhorias de segurança e observabilidade do processamento offline, não detecção por IA treinada.
+
+O detector legado agora valida os tipos dos registros, rejeita latências booleanas, nomes de serviços vazios ou com caracteres de controle e limita a 100.000 entradas tanto a API quanto a leitura CSV. Esse limite evita que arquivos enormes sejam apresentados como relatórios inofensivos.
