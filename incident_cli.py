@@ -23,6 +23,7 @@ from incident_engine import (
 )
 
 MAX_INPUT_BYTES = 20 * 1024 * 1024
+MAX_JSONL_LINE_BYTES = 1_000_000
 
 
 def parser() -> argparse.ArgumentParser:
@@ -78,6 +79,9 @@ def reject_duplicate_json_fields(pairs: list[tuple[str, object]]) -> dict:
 def read_jsonl(path: Path) -> Iterator[Mapping]:
     with path.open("r", encoding="utf-8-sig") as stream:
         for number, line in enumerate(stream, 1):
+            if len(line.encode('utf-8')) > MAX_JSONL_LINE_BYTES:
+                yield None
+                continue
             if not line.strip():
                 yield None
                 continue
