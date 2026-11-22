@@ -62,6 +62,19 @@ def read_csv(path: Path) -> Iterator[Mapping]:
         yield from reader
 
 
+def reject_nonstandard_json_number(token: str) -> None:
+    raise ValueError(f"Non-standard JSON number: {token}")
+
+
+def reject_duplicate_json_fields(pairs: list[tuple[str, object]]) -> dict:
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"Duplicate JSON field: {key}")
+        result[key] = value
+    return result
+
+
 def read_jsonl(path: Path) -> Iterator[Mapping]:
     with path.open("r", encoding="utf-8-sig") as stream:
         for number, line in enumerate(stream, 1):
@@ -69,8 +82,12 @@ def read_jsonl(path: Path) -> Iterator[Mapping]:
                 yield None
                 continue
             try:
-                value = json.loads(line)
-            except json.JSONDecodeError:
+                value = json.loads(
+                    line,
+                    parse_constant=reject_nonstandard_json_number,
+                    object_pairs_hook=reject_duplicate_json_fields,
+                )
+            except (json.JSONDecodeError, ValueError):
                 yield None
                 continue
             yield value
