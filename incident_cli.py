@@ -87,7 +87,7 @@ def read_jsonl(path: Path) -> Iterator[Mapping]:
                     parse_constant=reject_nonstandard_json_number,
                     object_pairs_hook=reject_duplicate_json_fields,
                 )
-            except (json.JSONDecodeError, ValueError):
+            except (json.JSONDecodeError, ValueError, RecursionError):
                 yield None
                 continue
             yield value
