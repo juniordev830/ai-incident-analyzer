@@ -8,7 +8,7 @@ class DeepJsonlTests(unittest.TestCase):
     def test_deeply_nested_object_does_not_crash_parser(self):
         with TemporaryDirectory() as folder:
             file = Path(folder) / "logs.jsonl"
-            file.write_text("[" * 1200 + "0" + "]" * 1200 + "\n" +
+            file.write_text("[" * 20_000 + "0" + "]" * 20_000 + "\n" +
                             '{"service":"api","latency_ms":30}\n', encoding="utf-8")
             rows = list(read_jsonl(file))
         self.assertEqual(rows[0], None)
